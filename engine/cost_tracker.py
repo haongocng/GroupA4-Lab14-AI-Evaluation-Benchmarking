@@ -10,6 +10,18 @@ MODEL_PRICING = {
         "input": 0.15 / 1_000_000,
         "output": 0.60 / 1_000_000
     },
+    "gpt-4o-mini-sim": {
+        "input": 0.15 / 1_000_000,
+        "output": 0.60 / 1_000_000
+    },
+    "claude-3-haiku-sim": {
+        "input": 0.25 / 1_000_000,
+        "output": 1.25 / 1_000_000
+    },
+    "tie-breaker-sim": {
+        "input": 5.00 / 1_000_000,
+        "output": 15.00 / 1_000_000
+    },
     "claude-3-5-sonnet": {
         "input": 3.00 / 1_000_000,
         "output": 15.00 / 1_000_000

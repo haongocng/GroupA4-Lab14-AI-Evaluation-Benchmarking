@@ -2,37 +2,43 @@
   "metadata": {
     "version": "Agent_V2_Optimized",
     "total": 55,
-    "timestamp": "2026-06-16 16:12:42"
+    "timestamp": "2026-06-16 16:18:19",
+    "duration_seconds": 1.4734,
+    "batch_size": 10
   },
   "metrics": {
-    "avg_score": 4.5,
-    "hit_rate": 0.8909090909090909,
-    "mrr": 0.8909090909090909,
+    "avg_score": 2.112,
+    "hit_rate": 0.891,
+    "mrr": 0.891,
     "faithfulness": 0.92,
-    "avg_latency": 0.1756468999940394,
-    "total_cost_usd": 0.17680500000000002,
-    "avg_cost_usd": 0.003214636363636364,
-    "agreement_rate": 0.5
+    "agreement_rate": 0.951,
+    "pass_rate": 0.018,
+    "conflict_rate": 0.0,
+    "avg_latency": 0.1755,
+    "total_tokens": 68516,
+    "total_cost_usd": 0.019065
   },
   "regression": {
     "v1_version": "Agent_V1_Base",
     "v2_version": "Agent_V2_Optimized",
     "v1_metrics": {
-      "avg_score": 4.036363636363636,
-      "hit_rate": 0.7818181818181819,
-      "mrr": 0.30303030303030304,
+      "avg_score": 2.1,
+      "hit_rate": 0.782,
+      "mrr": 0.303,
       "faithfulness": 0.82,
-      "avg_latency": 0.6485127181809565,
-      "total_cost_usd": 0.4896855,
-      "avg_cost_usd": 0.008903372727272728,
-      "agreement_rate": 0.5
+      "agreement_rate": 0.95,
+      "pass_rate": 0.018,
+      "conflict_rate": 0.0,
+      "avg_latency": 0.648,
+      "total_tokens": 79706,
+      "total_cost_usd": 0.331946
     },
     "deltas": {
-      "hit_rate_pct": 13.953488372093013,
-      "mrr_pct": 194.0,
+      "hit_rate_pct": 13.9386189258312,
+      "mrr_pct": 194.0594059405941,
       "faithfulness_pct": 12.195121951219525,
-      "cost_pct": -63.894172892601475,
-      "avg_latency_pct": -72.91542708881337
+      "cost_pct": -94.25659595235369,
+      "avg_latency_pct": -72.91666666666667
     },
     "gate_decision": "RELEASE",
     "warnings": []

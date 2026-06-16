@@ -2,10 +2,13 @@ import asyncio
 import json
 import os
 import time
-from engine.runner import BenchmarkRunner
+from typing import Any, Dict, List
+
 from agent.main_agent import MainAgent
-from engine.retrieval_eval import RetrievalEvaluator
 from engine.llm_judge import LLMJudge
+from engine.retrieval_eval import RetrievalEvaluator
+from engine.runner import BenchmarkRunner
+from analysis.regression import check_release_gate
 
 class ExpertEvaluator:
     def __init__(self):
@@ -47,63 +50,52 @@ class ExpertEvaluator:
             "token_usage": token_usage
         }
 
-class MultiModelJudge:
-    def __init__(self):
-        self.judge = LLMJudge()
+def load_dataset(path: str = "data/golden_set.jsonl") -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            "Missing data/golden_set.jsonl. Run 'python data/synthetic_gen.py' first."
+        )
 
-    async def evaluate_multi_judge(self, q, a, gt):
-        return await self.judge.evaluate_multi_judge(q, a, gt)
-
-async def run_benchmark_with_results(agent_version: str):
-    print(f"🚀 Khởi động Benchmark cho {agent_version}...")
-
-    if not os.path.exists("data/golden_set.jsonl"):
-        print("❌ Thiếu data/golden_set.jsonl. Hãy chạy 'python data/synthetic_gen.py' trước.")
-        return None, None
-
-    with open("data/golden_set.jsonl", "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
         dataset = [json.loads(line) for line in f if line.strip()]
 
     if not dataset:
-        print("❌ File data/golden_set.jsonl rỗng. Hãy tạo ít nhất 1 test case.")
-        return None, None
+        raise ValueError("data/golden_set.jsonl is empty.")
+    return dataset
+
+async def run_benchmark_with_results(agent_version: str):
+    print(f"Starting benchmark for {agent_version}...")
+    dataset = load_dataset()
+    start_time = time.perf_counter()
 
     # Instantiate the agent under test with its respective version
     agent = MainAgent(version=agent_version)
-    runner = BenchmarkRunner(agent, ExpertEvaluator(), MultiModelJudge())
-    results = await runner.run_all(dataset)
+    runner = BenchmarkRunner(agent, ExpertEvaluator(), LLMJudge())
+    results = await runner.run_all(dataset, batch_size=10)
+    metrics = runner.summarize(results)
+    duration_seconds = round(time.perf_counter() - start_time, 4)
 
-    total = len(results)
     summary = {
         "metadata": {
-            "version": agent_version, 
-            "total": total, 
-            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
+            "version": agent_version,
+            "total": len(results),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration_seconds": duration_seconds,
+            "batch_size": 10,
         },
-        "metrics": {
-            "avg_score": sum(r["judge"]["final_score"] for r in results) / total,
-            "hit_rate": sum(r["ragas"]["retrieval"]["hit_rate"] for r in results) / total,
-            "mrr": sum(r["ragas"]["retrieval"]["mrr"] for r in results) / total,
-            "faithfulness": sum(r["ragas"]["faithfulness"] for r in results) / total,
-            "avg_latency": sum(r["latency"] for r in results) / total,
-            "total_cost_usd": sum(r["token_usage"]["total_cost_usd"] for r in results),
-            "avg_cost_usd": sum(r["token_usage"]["total_cost_usd"] for r in results) / total,
-            "agreement_rate": sum(r["judge"]["agreement_rate"] for r in results) / total
-        }
+        "metrics": metrics,
     }
     return results, summary
 
-from analysis.regression import check_release_gate
-
 async def main():
-    # Run Base (V1)
-    _, v1_summary = await run_benchmark_with_results("Agent_V1_Base")
-    
-    # Run Optimized (V2)
-    v2_results, v2_summary = await run_benchmark_with_results("Agent_V2_Optimized")
-    
-    if not v1_summary or not v2_summary:
-        print("❌ Không thể chạy Benchmark. Kiểm tra lại data/golden_set.jsonl.")
+    try:
+        # Run Base (V1)
+        _, v1_summary = await run_benchmark_with_results("Agent_V1_Base")
+        
+        # Run Optimized (V2)
+        v2_results, v2_summary = await run_benchmark_with_results("Agent_V2_Optimized")
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Cannot run benchmark: {exc}")
         return
 
     # Check Gating conditions
@@ -116,7 +108,7 @@ async def main():
     def format_row(name, key, is_pct_metric=False, is_currency=False):
         v1_val = v1_summary["metrics"][key]
         v2_val = v2_summary["metrics"][key]
-        pct = deltas[f"{key}_pct" if not key.endswith("_usd") else "cost_pct"]
+        pct = deltas[f"{key}_pct" if not key.endswith("usd") else "cost_pct"]
         
         # Determine status symbol
         if "cost" in key or "latency" in key:
