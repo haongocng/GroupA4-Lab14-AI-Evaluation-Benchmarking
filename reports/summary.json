@@ -2,43 +2,43 @@
   "metadata": {
     "version": "Agent_V2_Optimized",
     "total": 55,
-    "timestamp": "2026-06-16 16:18:19",
-    "duration_seconds": 1.4734,
+    "timestamp": "2026-06-16 16:21:46",
+    "duration_seconds": 1.4427,
     "batch_size": 10
   },
   "metrics": {
-    "avg_score": 2.112,
-    "hit_rate": 0.891,
-    "mrr": 0.891,
+    "avg_score": 2.145,
+    "hit_rate": 0.927,
+    "mrr": 0.927,
     "faithfulness": 0.92,
-    "agreement_rate": 0.951,
+    "agreement_rate": 0.953,
     "pass_rate": 0.018,
     "conflict_rate": 0.0,
-    "avg_latency": 0.1755,
-    "total_tokens": 68516,
-    "total_cost_usd": 0.019065
+    "avg_latency": 0.1828,
+    "total_tokens": 68190,
+    "total_cost_usd": 0.018892
   },
   "regression": {
     "v1_version": "Agent_V1_Base",
     "v2_version": "Agent_V2_Optimized",
     "v1_metrics": {
-      "avg_score": 2.1,
-      "hit_rate": 0.782,
-      "mrr": 0.303,
+      "avg_score": 2.133,
+      "hit_rate": 0.745,
+      "mrr": 0.306,
       "faithfulness": 0.82,
-      "agreement_rate": 0.95,
+      "agreement_rate": 0.952,
       "pass_rate": 0.018,
       "conflict_rate": 0.0,
-      "avg_latency": 0.648,
-      "total_tokens": 79706,
-      "total_cost_usd": 0.331946
+      "avg_latency": 0.6442,
+      "total_tokens": 78990,
+      "total_cost_usd": 0.328049
     },
     "deltas": {
-      "hit_rate_pct": 13.9386189258312,
-      "mrr_pct": 194.0594059405941,
+      "hit_rate_pct": 24.42953020134229,
+      "mrr_pct": 202.94117647058823,
       "faithfulness_pct": 12.195121951219525,
-      "cost_pct": -94.25659595235369,
-      "avg_latency_pct": -72.91666666666667
+      "cost_pct": -94.24110422528341,
+      "avg_latency_pct": -71.62371934181931
     },
     "gate_decision": "RELEASE",
     "warnings": []
