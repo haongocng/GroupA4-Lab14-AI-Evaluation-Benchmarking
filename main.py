@@ -13,7 +13,7 @@ class ExpertEvaluator:
 
     async def score(self, case, resp): 
         # Calculate real Hit Rate and MRR from expected_retrieval_ids and retrieved_ids
-        expected_ids = case.get("expected_retrieval_ids", [])
+        expected_ids = case.get("ground_truth_chunk_ids") or case.get("expected_retrieval_ids") or []
         retrieved_ids = resp.get("retrieved_ids", [])
         
         hit_rate = self.retrieval_evaluator.calculate_hit_rate(expected_ids, retrieved_ids)

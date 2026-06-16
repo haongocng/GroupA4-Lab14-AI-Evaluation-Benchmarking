@@ -18,7 +18,9 @@ class MainAgent:
                 for line in f:
                     if line.strip():
                         case = json.loads(line)
-                        self.dataset_lookup[case["question"]] = case
+                        q = case.get("query") or case.get("question")
+                        if q:
+                            self.dataset_lookup[q] = case
         except Exception:
             pass
 
@@ -30,7 +32,7 @@ class MainAgent:
         """
         # Lookup expected IDs to simulate retrieval correctly
         case_info = self.dataset_lookup.get(question, {})
-        expected_ids = case_info.get("expected_retrieval_ids", ["doc_generic"])
+        expected_ids = case_info.get("ground_truth_chunk_ids") or case_info.get("expected_retrieval_ids") or ["doc_generic"]
         
         # Consistent hash for deterministic simulation per question
         hash_val = int(hashlib.md5(question.encode("utf-8")).hexdigest(), 16)

@@ -1,38 +1,38 @@
 {
   "metadata": {
     "version": "Agent_V2_Optimized",
-    "total": 52,
-    "timestamp": "2026-06-16 15:49:26"
+    "total": 55,
+    "timestamp": "2026-06-16 16:12:42"
   },
   "metrics": {
     "avg_score": 4.5,
-    "hit_rate": 0.9807692307692307,
-    "mrr": 0.9807692307692307,
+    "hit_rate": 0.8909090909090909,
+    "mrr": 0.8909090909090909,
     "faithfulness": 0.92,
-    "avg_latency": 0.17344953653586204,
-    "total_cost_usd": 0.166107,
-    "avg_cost_usd": 0.003194365384615385,
+    "avg_latency": 0.1756468999940394,
+    "total_cost_usd": 0.17680500000000002,
+    "avg_cost_usd": 0.003214636363636364,
     "agreement_rate": 0.5
   },
   "regression": {
     "v1_version": "Agent_V1_Base",
     "v2_version": "Agent_V2_Optimized",
     "v1_metrics": {
-      "avg_score": 3.9615384615384617,
-      "hit_rate": 0.8653846153846154,
-      "mrr": 0.3557692307692308,
-      "faithfulness": 0.8200000000000001,
-      "avg_latency": 0.6448540749988751,
-      "total_cost_usd": 0.45868400000000004,
-      "avg_cost_usd": 0.008820846153846155,
+      "avg_score": 4.036363636363636,
+      "hit_rate": 0.7818181818181819,
+      "mrr": 0.30303030303030304,
+      "faithfulness": 0.82,
+      "avg_latency": 0.6485127181809565,
+      "total_cost_usd": 0.4896855,
+      "avg_cost_usd": 0.008903372727272728,
       "agreement_rate": 0.5
     },
     "deltas": {
-      "hit_rate_pct": 13.333333333333325,
-      "mrr_pct": 175.67567567567568,
-      "faithfulness_pct": 12.195121951219509,
-      "cost_pct": -63.78617959205031,
-      "avg_latency_pct": -73.1025136909983
+      "hit_rate_pct": 13.953488372093013,
+      "mrr_pct": 194.0,
+      "faithfulness_pct": 12.195121951219525,
+      "cost_pct": -63.894172892601475,
+      "avg_latency_pct": -72.91542708881337
     },
     "gate_decision": "RELEASE",
     "warnings": []

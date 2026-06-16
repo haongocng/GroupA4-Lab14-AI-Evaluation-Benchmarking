@@ -12,8 +12,12 @@ class BenchmarkRunner:
     async def run_single_test(self, test_case: Dict) -> Dict:
         start_time = time.perf_counter()
         
+        # Determine keys for both schemas
+        q = test_case.get("query") or test_case.get("question")
+        gt = test_case.get("ground_truth_answer") or test_case.get("expected_answer")
+        
         # 1. Query the Agent
-        response = await self.agent.query(test_case["question"])
+        response = await self.agent.query(q)
         latency = time.perf_counter() - start_time
         
         # 2. Run RAGAS / Retrieval metrics
@@ -21,9 +25,9 @@ class BenchmarkRunner:
         
         # 3. Run Multi-Judge
         judge_result = await self.judge.evaluate_multi_judge(
-            test_case["question"], 
+            q, 
             response["answer"], 
-            test_case["expected_answer"]
+            gt
         )
         
         # 4. Track Token Usage & Cost
@@ -49,7 +53,7 @@ class BenchmarkRunner:
         
         # Add latency inside the runner response
         return {
-            "test_case": test_case["question"],
+            "test_case": q,
             "agent_response": response["answer"],
             "latency": latency,
             "ragas": {
