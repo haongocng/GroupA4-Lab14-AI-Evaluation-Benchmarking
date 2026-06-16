@@ -2,74 +2,123 @@ import asyncio
 import json
 import os
 import time
-from engine.runner import BenchmarkRunner
+from typing import Any, Dict, List
+
 from agent.main_agent import MainAgent
+from engine.llm_judge import LLMJudge
+from engine.retrieval_eval import RetrievalEvaluator
+from engine.runner import BenchmarkRunner
 
-# Giả lập các components Expert
-class ExpertEvaluator:
-    async def score(self, case, resp): 
-        # Giả lập tính toán Hit Rate và MRR
+
+class BenchmarkEvaluator:
+    """Evaluation adapter owned by the benchmark pipeline, without changing data modules."""
+
+    def __init__(self, top_k: int = 3):
+        self.retrieval = RetrievalEvaluator()
+        self.top_k = top_k
+
+    async def score(self, case: Dict[str, Any], response: Dict[str, Any]) -> Dict[str, Any]:
+        expected_ids = case.get("expected_retrieval_ids", [])
+        retrieved_ids = self._retrieved_ids(response)
+
+        hit_rate = (
+            self.retrieval.calculate_hit_rate(expected_ids, retrieved_ids, self.top_k)
+            if expected_ids
+            else 0.0
+        )
+        mrr = self.retrieval.calculate_mrr(expected_ids, retrieved_ids) if expected_ids else 0.0
+
+        answer = response.get("answer", "")
+        expected_answer = case.get("expected_answer", "")
+        relevancy = self._keyword_overlap(case.get("question", ""), answer)
+        faithfulness = self._keyword_overlap(expected_answer, answer)
+
         return {
-            "faithfulness": 0.9, 
-            "relevancy": 0.8,
-            "retrieval": {"hit_rate": 1.0, "mrr": 0.5}
+            "faithfulness": faithfulness,
+            "relevancy": relevancy,
+            "retrieval": {
+                "hit_rate": hit_rate,
+                "mrr": mrr,
+                "expected_ids": expected_ids,
+                "retrieved_ids": retrieved_ids,
+            },
         }
 
-class MultiModelJudge:
-    async def evaluate_multi_judge(self, q, a, gt): 
-        return {
-            "final_score": 4.5, 
-            "agreement_rate": 0.8,
-            "reasoning": "Cả 2 model đồng ý đây là câu trả lời tốt."
-        }
+    def _retrieved_ids(self, response: Dict[str, Any]) -> List[str]:
+        metadata = response.get("metadata", {})
+        return (
+            response.get("retrieved_ids")
+            or metadata.get("retrieved_ids")
+            or metadata.get("sources")
+            or []
+        )
 
-async def run_benchmark_with_results(agent_version: str):
-    print(f"🚀 Khởi động Benchmark cho {agent_version}...")
+    def _keyword_overlap(self, expected: str, actual: str) -> float:
+        expected_terms = {word.lower() for word in expected.split() if len(word) > 2}
+        actual_terms = {word.lower() for word in actual.split() if len(word) > 2}
+        if not expected_terms:
+            return 0.0
+        return round(len(expected_terms & actual_terms) / len(expected_terms), 3)
 
-    if not os.path.exists("data/golden_set.jsonl"):
-        print("❌ Thiếu data/golden_set.jsonl. Hãy chạy 'python data/synthetic_gen.py' trước.")
-        return None, None
 
-    with open("data/golden_set.jsonl", "r", encoding="utf-8") as f:
+def load_dataset(path: str = "data/golden_set.jsonl") -> List[Dict[str, Any]]:
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            "Missing data/golden_set.jsonl. Run '.\\venv\\Scripts\\python.exe -X utf8 data\\synthetic_gen.py' first."
+        )
+
+    with open(path, "r", encoding="utf-8") as f:
         dataset = [json.loads(line) for line in f if line.strip()]
 
     if not dataset:
-        print("❌ File data/golden_set.jsonl rỗng. Hãy tạo ít nhất 1 test case.")
-        return None, None
+        raise ValueError("data/golden_set.jsonl is empty.")
+    return dataset
 
-    runner = BenchmarkRunner(MainAgent(), ExpertEvaluator(), MultiModelJudge())
-    results = await runner.run_all(dataset)
 
-    total = len(results)
+async def run_benchmark_with_results(agent_version: str):
+    print(f"Starting benchmark for {agent_version}...")
+    dataset = load_dataset()
+    start_time = time.perf_counter()
+
+    runner = BenchmarkRunner(MainAgent(), BenchmarkEvaluator(), LLMJudge())
+    results = await runner.run_all(dataset, batch_size=5)
+    metrics = runner.summarize(results)
+    duration_seconds = round(time.perf_counter() - start_time, 4)
+
     summary = {
-        "metadata": {"version": agent_version, "total": total, "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")},
-        "metrics": {
-            "avg_score": sum(r["judge"]["final_score"] for r in results) / total,
-            "hit_rate": sum(r["ragas"]["retrieval"]["hit_rate"] for r in results) / total,
-            "agreement_rate": sum(r["judge"]["agreement_rate"] for r in results) / total
-        }
+        "metadata": {
+            "version": agent_version,
+            "total": len(results),
+            "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+            "duration_seconds": duration_seconds,
+            "batch_size": 5,
+        },
+        "metrics": metrics,
     }
     return results, summary
+
 
 async def run_benchmark(version):
     _, summary = await run_benchmark_with_results(version)
     return summary
 
+
 async def main():
-    v1_summary = await run_benchmark("Agent_V1_Base")
-    
-    # Giả lập V2 có cải tiến (để test logic)
-    v2_results, v2_summary = await run_benchmark_with_results("Agent_V2_Optimized")
-    
-    if not v1_summary or not v2_summary:
-        print("❌ Không thể chạy Benchmark. Kiểm tra lại data/golden_set.jsonl.")
+    try:
+        v1_summary = await run_benchmark("Agent_V1_Base")
+        v2_results, v2_summary = await run_benchmark_with_results("Agent_V2_Optimized")
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Cannot run benchmark: {exc}")
         return
 
-    print("\n📊 --- KẾT QUẢ SO SÁNH (REGRESSION) ---")
+    print("\n--- REGRESSION COMPARISON ---")
     delta = v2_summary["metrics"]["avg_score"] - v1_summary["metrics"]["avg_score"]
     print(f"V1 Score: {v1_summary['metrics']['avg_score']}")
     print(f"V2 Score: {v2_summary['metrics']['avg_score']}")
     print(f"Delta: {'+' if delta >= 0 else ''}{delta:.2f}")
+    print(f"Agreement Rate: {v2_summary['metrics']['agreement_rate']}")
+    print(f"Avg Latency: {v2_summary['metrics']['avg_latency']}s")
+    print(f"Total Cost Estimate: ${v2_summary['metrics']['total_cost_usd']}")
 
     os.makedirs("reports", exist_ok=True)
     with open("reports/summary.json", "w", encoding="utf-8") as f:
@@ -78,9 +127,10 @@ async def main():
         json.dump(v2_results, f, ensure_ascii=False, indent=2)
 
     if delta > 0:
-        print("✅ QUYẾT ĐỊNH: CHẤP NHẬN BẢN CẬP NHẬT (APPROVE)")
+        print("RELEASE DECISION: APPROVE")
     else:
-        print("❌ QUYẾT ĐỊNH: TỪ CHỐI (BLOCK RELEASE)")
+        print("RELEASE DECISION: BLOCK RELEASE")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
